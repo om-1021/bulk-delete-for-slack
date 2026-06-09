@@ -151,7 +151,7 @@ export function App({ onClose }: { onClose: () => void }) {
                   checked={state.keepPinned}
                   onInput={(e) => dispatch({ type: "SET_KEEP_PINNED", keepPinned: (e.target as HTMLInputElement).checked })}
                 />
-                Keep pinned messages (don't delete pinned)
+                Keep pinned &amp; saved-for-later messages
               </label>
               <button class="btn btn-secondary" disabled={!state.channelId} onClick={onScan}>Scan messages</button>
             </>

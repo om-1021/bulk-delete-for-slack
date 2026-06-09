@@ -44,6 +44,7 @@ export interface SlackApi {
   usersInfo(user: string): Promise<UserInfo>;
   usersConversations(opts?: { cursor?: string; types?: string; limit?: number }): Promise<{ conversations: ConversationInfo[]; nextCursor?: string }>;
   pinsList(channel: string): Promise<string[]>;
+  savedList(): Promise<Array<{ channel: string; ts: string }>>;
 }
 
 export function createSlackApi(
@@ -123,6 +124,23 @@ export function createSlackApi(
       return (json.items ?? [])
         .filter((it) => it.type === "message" && it.message?.ts)
         .map((it) => it.message!.ts!);
+    },
+    async savedList() {
+      const out: { channel: string; ts: string }[] = [];
+      let cursor: string | undefined;
+      do {
+        const params: Record<string, string> = { limit: "200" };
+        if (cursor) params.cursor = cursor;
+        const json = await postReadJson<{
+          saved_items?: Array<{ item_id?: string; item_type?: string; ts?: string }>;
+          response_metadata?: { next_cursor?: string };
+        }>("saved.list", params);
+        for (const it of json.saved_items ?? []) {
+          if (it.item_type === "message" && it.item_id && it.ts) out.push({ channel: it.item_id, ts: it.ts });
+        }
+        cursor = json.response_metadata?.next_cursor || undefined;
+      } while (cursor);
+      return out;
     },
   };
 }

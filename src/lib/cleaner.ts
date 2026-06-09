@@ -37,13 +37,24 @@ export async function scan(
   const latest = filters.beforeSec !== undefined ? String(filters.beforeSec) : undefined;
   let scanned = 0;
 
-  let pinned = new Set<string>();
+  // "keepPinned" protects both pinned messages and Save-for-later messages.
+  // Each source is fetched independently and fails open (a failure of one never
+  // blocks deletion, nor loses the other's protection).
+  const protectedTs = new Set<string>();
   if (filters.keepPinned) {
     try {
       await deps.sleep(deps.limiter.reserve());
-      pinned = new Set(await deps.api.pinsList(channel));
+      for (const ts of await deps.api.pinsList(channel)) protectedTs.add(ts);
     } catch {
-      pinned = new Set();
+      /* ignore pins.list failure */
+    }
+    try {
+      await deps.sleep(deps.limiter.reserve());
+      for (const s of await deps.api.savedList()) {
+        if (s.channel === channel) protectedTs.add(s.ts);
+      }
+    } catch {
+      /* ignore saved.list failure */
     }
   }
 
@@ -52,7 +63,7 @@ export async function scan(
     await deps.sleep(deps.limiter.reserve());
     const page = await deps.api.conversationsHistory(channel, { cursor, oldest, latest, limit: 200 });
     for (const m of page.messages) {
-      if (matches(m, ctx.userId, filters) && !pinned.has(m.ts)) found.add(m.ts);
+      if (matches(m, ctx.userId, filters) && !protectedTs.has(m.ts)) found.add(m.ts);
       if ((m.reply_count ?? 0) > 0) threadRoots.push(m.ts);
     }
     scanned += page.messages.length;
@@ -67,7 +78,7 @@ export async function scan(
       const page = await deps.api.conversationsReplies(channel, root, { cursor: rc, limit: 200 });
       for (const m of page.messages) {
         if (m.ts === root) continue; // root already handled by history pass
-        if (matches(m, ctx.userId, filters) && !pinned.has(m.ts)) found.add(m.ts);
+        if (matches(m, ctx.userId, filters) && !protectedTs.has(m.ts)) found.add(m.ts);
       }
       scanned += page.messages.length;
       onProgress?.({ scanned, found: found.size });

@@ -11,6 +11,7 @@ function api(over: Partial<SlackApi>): SlackApi {
     usersInfo: async () => ({}),
     usersConversations: async () => ({ conversations: [] }),
     pinsList: async () => [],
+    savedList: async () => [],
     ...over,
   };
 }

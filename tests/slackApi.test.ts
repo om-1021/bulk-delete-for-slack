@@ -100,4 +100,19 @@ describe("createSlackApi", () => {
     const api = createSlackApi(ctx, fetchMock as unknown as typeof fetch);
     expect(await api.pinsList("C1")).toEqual(["111.0", "222.0"]);
   });
+
+  it("posts saved.list and returns message saved items as {channel, ts}", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ ok: true, saved_items: [
+        { item_id: "D1", item_type: "message", ts: "111.0" },
+        { item_id: "C9", item_type: "message", ts: "222.0" },
+        { item_id: "F1", item_type: "file" },
+      ] }),
+    );
+    const api = createSlackApi(ctx, fetchMock as unknown as typeof fetch);
+    const res = await api.savedList();
+    const [url] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://app.slack.com/api/saved.list");
+    expect(res).toEqual([{ channel: "D1", ts: "111.0" }, { channel: "C9", ts: "222.0" }]);
+  });
 });

@@ -16,6 +16,7 @@ function fakeApi(over: Partial<SlackApi> = {}): SlackApi {
     usersInfo: async () => ({}),
     usersConversations: async () => ({ conversations: [] }),
     pinsList: async () => [],
+    savedList: async () => [],
     ...over,
   };
 }
@@ -94,23 +95,33 @@ describe("scan", () => {
     ]);
   });
 
-  it("excludes pinned messages when keepPinned is on", async () => {
+  it("excludes pinned and saved-for-later messages (this channel only) when keepPinned is on", async () => {
     const api = fakeApi({
-      conversationsHistory: async () => ({ messages: [{ ts: "100.0", user: "U1" }, { ts: "200.0", user: "U1" }] }),
+      conversationsHistory: async () => ({ messages: [
+        { ts: "100.0", user: "U1" }, { ts: "200.0", user: "U1" },
+        { ts: "300.0", user: "U1" }, { ts: "400.0", user: "U1" },
+      ] }),
       pinsList: async () => ["100.0"],
+      savedList: async () => [
+        { channel: "C1", ts: "200.0" },     // saved in this channel -> excluded
+        { channel: "OTHER", ts: "300.0" },  // saved elsewhere -> NOT excluded here
+      ],
     });
     const res = await scan("C1", ctx, { onlyMine: true, keepPinned: true }, deps(api));
-    expect(res.tsList).toEqual(["200.0"]);
+    expect(res.tsList).toEqual(["300.0", "400.0"]);
   });
 
-  it("does not call pins.list when keepPinned is off", async () => {
+  it("does not fetch pins or saved items when keepPinned is off", async () => {
     const pins = vi.fn(async () => ["100.0"]);
+    const saved = vi.fn(async () => [{ channel: "C1", ts: "100.0" }]);
     const api = fakeApi({
       conversationsHistory: async () => ({ messages: [{ ts: "100.0", user: "U1" }] }),
       pinsList: pins,
+      savedList: saved,
     });
     const res = await scan("C1", ctx, { onlyMine: true, keepPinned: false }, deps(api));
     expect(pins).not.toHaveBeenCalled();
+    expect(saved).not.toHaveBeenCalled();
     expect(res.tsList).toEqual(["100.0"]);
   });
 });
