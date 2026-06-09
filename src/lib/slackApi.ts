@@ -126,10 +126,12 @@ export function createSlackApi(
         .map((it) => it.message!.ts!);
     },
     async savedList() {
+      // NOTE: saved.list rejects a `limit` param (invalid_arguments). Send only the
+      // (token +) optional cursor.
       const out: { channel: string; ts: string }[] = [];
       let cursor: string | undefined;
       do {
-        const params: Record<string, string> = { limit: "200" };
+        const params: Record<string, string> = {};
         if (cursor) params.cursor = cursor;
         const json = await postReadJson<{
           saved_items?: Array<{ item_id?: string; item_type?: string; ts?: string }>;
