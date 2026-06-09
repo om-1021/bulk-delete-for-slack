@@ -37,7 +37,7 @@ Note: it deletes only your own messages, and deletion is permanent.
 ## Privacy practices
 - Single purpose: bulk-delete the user's own Slack messages.
 - Data collected: none. Nothing is transmitted off the user's device.
-- Privacy policy URL: <host PRIVACY.md publicly and paste the link here>
+- Privacy policy URL: https://github.com/om-1021/bulk-delete-for-slack/blob/main/PRIVACY.md
 - Remote code: none.
 
 ## Submission checklist
