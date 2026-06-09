@@ -60,11 +60,12 @@ export function App({ onClose }: { onClose: () => void }) {
     const ac = new AbortController();
     abortRef.current = ac;
     dispatch({ type: "RUN_START" });
+    let errored = false;
     const final = await runDelete(scanRef.current, ctxRef.current, buildDeps(), (e) => {
       if (e.type === "progress") dispatch({ type: "PROGRESS", progress: e.progress });
-      else if (e.type === "error") dispatch({ type: "ERROR", message: e.message });
+      else if (e.type === "error") { errored = true; dispatch({ type: "ERROR", message: e.message }); }
     }, ac.signal);
-    if (state.status !== "error") {
+    if (!errored) {
       dispatch(ac.signal.aborted ? { type: "RUN_STOPPED", progress: final } : { type: "RUN_DONE", progress: final });
     }
   }
