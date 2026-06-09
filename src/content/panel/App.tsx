@@ -107,7 +107,13 @@ export function App({ onClose }: { onClose: () => void }) {
   return (
     <div>
       <style>{PANEL_CSS}</style>
-      <div class="panel">
+      <div
+        class="panel"
+        onKeyDown={(e) => e.stopPropagation()}
+        onKeyUp={(e) => e.stopPropagation()}
+        onKeyPress={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div class="header">
           <h1>Bulk Delete for Slack</h1>
           <button onClick={onClose} aria-label="Close">×</button>
