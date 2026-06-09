@@ -50,4 +50,22 @@ describe("panel reducer", () => {
     const rescan = reduce(progressed, { type: "SCAN_START" });
     expect(rescan.scanProgress).toEqual({ scanned: 0, found: 0 });
   });
+
+  it("defaults keepPinned to true and toggles it", () => {
+    expect(initialState.keepPinned).toBe(true);
+    const off = reduce(initialState, { type: "SET_KEEP_PINNED", keepPinned: false });
+    expect(off.keepPinned).toBe(false);
+  });
+
+  it("selects a new target, resetting scan but keeping filters", () => {
+    let s = reduce(initialState, { type: "INIT", channelId: "C1", conversationName: "#a" });
+    s = reduce(s, { type: "SET_AFTER", afterSec: 123 });
+    s = reduce(s, { type: "SCAN_DONE", total: 9 });
+    const sel = reduce(s, { type: "SELECT_TARGET", channelId: "C2", conversationName: "#b" });
+    expect(sel.channelId).toBe("C2");
+    expect(sel.conversationName).toBe("#b");
+    expect(sel.status).toBe("idle");
+    expect(sel.scanTotal).toBe(0);
+    expect(sel.afterSec).toBe(123);
+  });
 });

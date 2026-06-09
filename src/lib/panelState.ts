@@ -11,6 +11,7 @@ export interface PanelState {
   beforeSec?: number;
   confirmed: boolean;
   scanTotal: number;
+  keepPinned: boolean;
   scanProgress: { scanned: number; found: number };
   progress: DeleteProgress;
   error?: string;
@@ -29,6 +30,8 @@ export type PanelAction =
   | { type: "RUN_DONE"; progress: DeleteProgress }
   | { type: "RUN_STOPPED"; progress: DeleteProgress }
   | { type: "ERROR"; message: string }
+  | { type: "SET_KEEP_PINNED"; keepPinned: boolean }
+  | { type: "SELECT_TARGET"; channelId: string; conversationName: string }
   | { type: "RESET" }
   | { type: "SET_CONVERSATION_NAME"; conversationName: string };
 
@@ -38,6 +41,7 @@ export const initialState: PanelState = {
   channelId: null,
   confirmed: false,
   scanTotal: 0,
+  keepPinned: true,
   scanProgress: { scanned: 0, found: 0 },
   progress: { deleted: 0, skipped: 0, total: 0, ratePerMin: 0, elapsedMs: 0 },
 };
@@ -72,6 +76,20 @@ export function reduce(state: PanelState, action: PanelAction): PanelState {
       return { ...initialState, channelId: state.channelId, conversationName: state.conversationName };
     case "SET_CONVERSATION_NAME":
       return { ...state, conversationName: action.conversationName };
+    case "SET_KEEP_PINNED":
+      return { ...state, keepPinned: action.keepPinned };
+    case "SELECT_TARGET":
+      return {
+        ...state,
+        channelId: action.channelId,
+        conversationName: action.conversationName,
+        status: "idle",
+        error: undefined,
+        confirmed: false,
+        scanTotal: 0,
+        scanProgress: { scanned: 0, found: 0 },
+        progress: { deleted: 0, skipped: 0, total: 0, ratePerMin: 0, elapsedMs: 0 },
+      };
     default:
       return state;
   }
