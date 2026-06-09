@@ -119,8 +119,7 @@ export function App({ onClose }: { onClose: () => void }) {
                 {state.scanProgress.found > 0 ? `, found ${state.scanProgress.found} of yours` : ""}.
               </p>
               <p class="hint">
-                This can take a few minutes for long conversations — it's working through them in
-                the background. Please keep this tab open.
+                This can take a few minutes for long conversations. Please keep this tab open.
               </p>
             </div>
           )}
