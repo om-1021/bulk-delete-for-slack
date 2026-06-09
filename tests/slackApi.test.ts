@@ -40,4 +40,24 @@ describe("createSlackApi", () => {
       ok: false, status: 429, error: "ratelimited", retryAfterMs: 3000,
     });
   });
+
+  it("posts conversations.info and returns the channel object", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ ok: true, channel: { id: "D1", is_im: true, user: "U9" } }));
+    const api = createSlackApi(ctx, fetchMock as unknown as typeof fetch);
+    const info = await api.conversationsInfo("D1");
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://app.slack.com/api/conversations.info");
+    expect(String(init.body)).toContain("channel=D1");
+    expect(info).toEqual({ id: "D1", is_im: true, user: "U9" });
+  });
+
+  it("posts users.info and returns the user object", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse({ ok: true, user: { id: "U9", name: "alice", profile: { display_name: "Alice" } } }));
+    const api = createSlackApi(ctx, fetchMock as unknown as typeof fetch);
+    const u = await api.usersInfo("U9");
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://app.slack.com/api/users.info");
+    expect(String(init.body)).toContain("user=U9");
+    expect(u.profile?.display_name).toBe("Alice");
+  });
 });

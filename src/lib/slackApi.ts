@@ -12,6 +12,21 @@ export interface DeleteOutcome {
   retryAfterMs?: number;
 }
 
+export interface ConversationInfo {
+  id?: string;
+  name?: string;       // channel/group name (without leading #)
+  is_im?: boolean;
+  is_mpim?: boolean;
+  user?: string;       // peer user id (for IMs)
+}
+
+export interface UserInfo {
+  id?: string;
+  name?: string;                                   // handle
+  real_name?: string;
+  profile?: { display_name?: string; real_name?: string };
+}
+
 export interface SlackApi {
   conversationsHistory(
     channel: string,
@@ -23,6 +38,8 @@ export interface SlackApi {
     opts?: { cursor?: string; limit?: number },
   ): Promise<HistoryPage>;
   chatDelete(channel: string, ts: string): Promise<DeleteOutcome>;
+  conversationsInfo(channel: string): Promise<ConversationInfo>;
+  usersInfo(user: string): Promise<UserInfo>;
 }
 
 export function createSlackApi(ctx: SlackContext, fetchImpl: typeof fetch = fetch): SlackApi {
@@ -66,6 +83,16 @@ export function createSlackApi(ctx: SlackContext, fetchImpl: typeof fetch = fetc
       }
       const json = (await res.json()) as { ok?: boolean; error?: string };
       return { ok: !!json.ok, error: json.error, status: res.status };
+    },
+    async conversationsInfo(channel) {
+      const res = await post("conversations.info", { channel });
+      const json = (await res.json()) as { channel?: ConversationInfo };
+      return json.channel ?? {};
+    },
+    async usersInfo(user) {
+      const res = await post("users.info", { user });
+      const json = (await res.json()) as { user?: UserInfo };
+      return json.user ?? {};
     },
   };
 }

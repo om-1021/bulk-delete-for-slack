@@ -33,4 +33,11 @@ describe("panel reducer", () => {
     expect(s.status).toBe("error");
     expect(s.error).toBe("boom");
   });
+
+  it("updates the conversation name without changing status", () => {
+    const initd = reduce(initialState, { type: "INIT", channelId: "D1", conversationName: "D1" });
+    const named = reduce(initd, { type: "SET_CONVERSATION_NAME", conversationName: "DM with Alice" });
+    expect(named.conversationName).toBe("DM with Alice");
+    expect(named.status).toBe("idle");
+  });
 });

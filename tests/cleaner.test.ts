@@ -12,6 +12,8 @@ function fakeApi(over: Partial<SlackApi> = {}): SlackApi {
     conversationsHistory: async (): Promise<HistoryPage> => ({ messages: [] }),
     conversationsReplies: async (): Promise<HistoryPage> => ({ messages: [] }),
     chatDelete: async () => ({ ok: true, status: 200 }),
+    conversationsInfo: async () => ({}),
+    usersInfo: async () => ({}),
     ...over,
   };
 }

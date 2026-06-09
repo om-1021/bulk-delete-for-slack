@@ -4,6 +4,7 @@ import { readSlackContext, readActiveChannelId, TokenNotFoundError } from "../..
 import { createSlackApi } from "../../lib/slackApi";
 import { RateLimiter } from "../../lib/rateLimiter";
 import { scan, runDelete, type CleanerDeps } from "../../lib/cleaner";
+import { resolveConversationName } from "../../lib/conversationName";
 import type { ScanFilters, ScanResult, SlackContext } from "../../lib/types";
 import { PANEL_CSS } from "./styles";
 
@@ -28,6 +29,11 @@ export function App({ onClose }: { onClose: () => void }) {
       const channelId = readActiveChannelId(location.pathname);
       dispatch({ type: "INIT", channelId, conversationName: channelId ?? "" });
       if (!channelId) dispatch({ type: "ERROR", message: "Open a DM, group, or channel first." });
+      if (channelId) {
+        resolveConversationName(channelId, createSlackApi(ctx)).then((name) =>
+          dispatch({ type: "SET_CONVERSATION_NAME", conversationName: name }),
+        );
+      }
     } catch (e) {
       dispatch({
         type: "ERROR",

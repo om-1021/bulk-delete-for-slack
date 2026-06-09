@@ -27,7 +27,8 @@ export type PanelAction =
   | { type: "RUN_DONE"; progress: DeleteProgress }
   | { type: "RUN_STOPPED"; progress: DeleteProgress }
   | { type: "ERROR"; message: string }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  | { type: "SET_CONVERSATION_NAME"; conversationName: string };
 
 export const initialState: PanelState = {
   status: "idle",
@@ -64,6 +65,8 @@ export function reduce(state: PanelState, action: PanelAction): PanelState {
       return { ...state, status: "error", error: action.message };
     case "RESET":
       return { ...initialState, channelId: state.channelId, conversationName: state.conversationName };
+    case "SET_CONVERSATION_NAME":
+      return { ...state, conversationName: action.conversationName };
     default:
       return state;
   }
