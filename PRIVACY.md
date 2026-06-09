@@ -17,4 +17,4 @@ This extension does not collect, store, transmit, or sell any personal data.
 Because the extension only ever deletes the messages you yourself posted, and deletion is
 permanent, please use it deliberately.
 
-Contact: om@zeer.ai
+Contact: om.1021.official@gmail.com
