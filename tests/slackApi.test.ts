@@ -18,7 +18,7 @@ describe("createSlackApi", () => {
     const api = createSlackApi(ctx, fetchMock as unknown as typeof fetch);
     const page = await api.conversationsHistory("C1", { limit: 200 });
 
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe("https://app.slack.com/api/conversations.history");
     expect(init.credentials).toBe("include");
     expect(String(init.body)).toContain("token=xoxc-1");
