@@ -7,6 +7,7 @@ import { scan, runDelete, type CleanerDeps } from "../../lib/cleaner";
 import { resolveConversationName } from "../../lib/conversationName";
 import type { ScanFilters, ScanResult, SlackContext } from "../../lib/types";
 import { PANEL_CSS } from "./styles";
+import { ConversationPicker } from "./ConversationPicker";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -46,7 +47,7 @@ export function App({ onClose }: { onClose: () => void }) {
     return { api: createSlackApi(ctxRef.current!), limiter: new RateLimiter(), sleep, now: () => Date.now() };
   }
   function filters(): ScanFilters {
-    return { onlyMine: true, afterSec: state.afterSec, beforeSec: state.beforeSec };
+    return { onlyMine: true, afterSec: state.afterSec, beforeSec: state.beforeSec, keepPinned: state.keepPinned };
   }
 
   async function onScan() {
@@ -97,8 +98,15 @@ export function App({ onClose }: { onClose: () => void }) {
             <p class="target">Cleaning: <b>{state.conversationName}</b><br />Only messages sent by you.</p>
           )}
 
-          {(state.status === "idle" || state.status === "preview") && state.channelId && (
+          {(state.status === "idle" || state.status === "preview") && (
             <>
+              {ctxRef.current && (
+                <ConversationPicker
+                  api={createSlackApi(ctxRef.current)}
+                  selectedId={state.channelId}
+                  onSelect={(id, label) => dispatch({ type: "SELECT_TARGET", channelId: id, conversationName: label })}
+                />
+              )}
               <div class="field">
                 <label>After (optional)</label>
                 <input type="date" onInput={(e) => dispatch({ type: "SET_AFTER", afterSec: dateToSec((e.target as HTMLInputElement).value) })} />
@@ -107,7 +115,15 @@ export function App({ onClose }: { onClose: () => void }) {
                 <label>Before (optional)</label>
                 <input type="date" onInput={(e) => dispatch({ type: "SET_BEFORE", beforeSec: dateToSec((e.target as HTMLInputElement).value) })} />
               </div>
-              <button class="btn btn-secondary" onClick={onScan}>Scan messages</button>
+              <label class="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={state.keepPinned}
+                  onInput={(e) => dispatch({ type: "SET_KEEP_PINNED", keepPinned: (e.target as HTMLInputElement).checked })}
+                />
+                Keep pinned messages (don't delete pinned)
+              </label>
+              <button class="btn btn-secondary" disabled={!state.channelId} onClick={onScan}>Scan messages</button>
             </>
           )}
 
