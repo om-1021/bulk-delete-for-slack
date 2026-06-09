@@ -75,4 +75,29 @@ describe("createSlackApi", () => {
     expect(calls).toBe(2);
     expect(page.messages).toHaveLength(1);
   });
+
+  it("posts users.conversations and parses the channels list + cursor", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ ok: true, channels: [{ id: "C1", name: "general", is_channel: true }], response_metadata: { next_cursor: "cur2" } }),
+    );
+    const api = createSlackApi(ctx, fetchMock as unknown as typeof fetch);
+    const res = await api.usersConversations({ limit: 100 });
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://app.slack.com/api/users.conversations");
+    expect(String(init.body)).toContain("types=");
+    expect(res.conversations).toHaveLength(1);
+    expect(res.nextCursor).toBe("cur2");
+  });
+
+  it("posts pins.list and returns only message pin timestamps", async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse({ ok: true, items: [
+        { type: "message", message: { ts: "111.0" } },
+        { type: "file", file: { id: "F1" } },
+        { type: "message", message: { ts: "222.0" } },
+      ] }),
+    );
+    const api = createSlackApi(ctx, fetchMock as unknown as typeof fetch);
+    expect(await api.pinsList("C1")).toEqual(["111.0", "222.0"]);
+  });
 });

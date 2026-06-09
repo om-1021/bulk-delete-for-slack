@@ -17,6 +17,8 @@ export interface ConversationInfo {
   name?: string;       // channel/group name (without leading #)
   is_im?: boolean;
   is_mpim?: boolean;
+  is_channel?: boolean;
+  is_private?: boolean;
   user?: string;       // peer user id (for IMs)
 }
 
@@ -40,6 +42,8 @@ export interface SlackApi {
   chatDelete(channel: string, ts: string): Promise<DeleteOutcome>;
   conversationsInfo(channel: string): Promise<ConversationInfo>;
   usersInfo(user: string): Promise<UserInfo>;
+  usersConversations(opts?: { cursor?: string; types?: string; limit?: number }): Promise<{ conversations: ConversationInfo[]; nextCursor?: string }>;
+  pinsList(channel: string): Promise<string[]>;
 }
 
 export function createSlackApi(
@@ -103,6 +107,22 @@ export function createSlackApi(
     async usersInfo(user) {
       const json = await postReadJson<{ user?: UserInfo }>("users.info", { user });
       return json.user ?? {};
+    },
+    async usersConversations(opts = {}) {
+      const params: Record<string, string> = {
+        types: opts.types ?? "public_channel,private_channel,mpim,im",
+        exclude_archived: "true",
+        limit: String(opts.limit ?? 1000),
+      };
+      if (opts.cursor) params.cursor = opts.cursor;
+      const json = await postReadJson<{ channels?: ConversationInfo[]; response_metadata?: { next_cursor?: string } }>("users.conversations", params);
+      return { conversations: json.channels ?? [], nextCursor: json.response_metadata?.next_cursor || undefined };
+    },
+    async pinsList(channel) {
+      const json = await postReadJson<{ items?: Array<{ type?: string; message?: { ts?: string } }> }>("pins.list", { channel });
+      return (json.items ?? [])
+        .filter((it) => it.type === "message" && it.message?.ts)
+        .map((it) => it.message!.ts!);
     },
   };
 }

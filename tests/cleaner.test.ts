@@ -14,6 +14,8 @@ function fakeApi(over: Partial<SlackApi> = {}): SlackApi {
     chatDelete: async () => ({ ok: true, status: 200 }),
     conversationsInfo: async () => ({}),
     usersInfo: async () => ({}),
+    usersConversations: async () => ({ conversations: [] }),
+    pinsList: async () => [],
     ...over,
   };
 }
