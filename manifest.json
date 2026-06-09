@@ -11,7 +11,7 @@
   },
   "background": { "service_worker": "src/background/service-worker.ts", "type": "module" },
   "host_permissions": ["https://*.slack.com/*"],
-  "permissions": ["scripting", "activeTab", "storage"],
+  "permissions": ["activeTab"],
   "content_scripts": [
     {
       "matches": ["https://app.slack.com/*"],

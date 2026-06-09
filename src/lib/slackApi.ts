@@ -42,7 +42,11 @@ export interface SlackApi {
   usersInfo(user: string): Promise<UserInfo>;
 }
 
-export function createSlackApi(ctx: SlackContext, fetchImpl: typeof fetch = fetch): SlackApi {
+export function createSlackApi(
+  ctx: SlackContext,
+  fetchImpl: typeof fetch = fetch,
+  sleepImpl: (ms: number) => Promise<void> = (ms) => new Promise((r) => setTimeout(r, ms)),
+): SlackApi {
   async function post(method: string, params: Record<string, string>): Promise<Response> {
     const body = new URLSearchParams({ token: ctx.token, ...params });
     return fetchImpl(`${ctx.apiBase}/api/${method}`, {
@@ -51,6 +55,16 @@ export function createSlackApi(ctx: SlackContext, fetchImpl: typeof fetch = fetc
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: body.toString(),
     });
+  }
+
+  async function postReadJson<T>(method: string, params: Record<string, string>, attempt = 0): Promise<T> {
+    const res = await post(method, params);
+    if (res.status === 429 && attempt < 3) {
+      const ra = Number(res.headers.get("Retry-After") ?? "1");
+      await sleepImpl((Number.isFinite(ra) ? ra : 1) * 1000);
+      return postReadJson<T>(method, params, attempt + 1);
+    }
+    return (await res.json()) as T;
   }
 
   function toPage(json: { messages?: SlackMessage[]; response_metadata?: { next_cursor?: string } }): HistoryPage {
@@ -66,14 +80,12 @@ export function createSlackApi(ctx: SlackContext, fetchImpl: typeof fetch = fetc
       if (opts.cursor) params.cursor = opts.cursor;
       if (opts.oldest) params.oldest = opts.oldest;
       if (opts.latest) params.latest = opts.latest;
-      const res = await post("conversations.history", params);
-      return toPage(await res.json());
+      return toPage(await postReadJson<{ messages?: SlackMessage[]; response_metadata?: { next_cursor?: string } }>("conversations.history", params));
     },
     async conversationsReplies(channel, ts, opts = {}) {
       const params: Record<string, string> = { channel, ts, limit: String(opts.limit ?? 200) };
       if (opts.cursor) params.cursor = opts.cursor;
-      const res = await post("conversations.replies", params);
-      return toPage(await res.json());
+      return toPage(await postReadJson<{ messages?: SlackMessage[]; response_metadata?: { next_cursor?: string } }>("conversations.replies", params));
     },
     async chatDelete(channel, ts) {
       const res = await post("chat.delete", { channel, ts });
@@ -85,13 +97,11 @@ export function createSlackApi(ctx: SlackContext, fetchImpl: typeof fetch = fetc
       return { ok: !!json.ok, error: json.error, status: res.status };
     },
     async conversationsInfo(channel) {
-      const res = await post("conversations.info", { channel });
-      const json = (await res.json()) as { channel?: ConversationInfo };
+      const json = await postReadJson<{ channel?: ConversationInfo }>("conversations.info", { channel });
       return json.channel ?? {};
     },
     async usersInfo(user) {
-      const res = await post("users.info", { user });
-      const json = (await res.json()) as { user?: UserInfo };
+      const json = await postReadJson<{ user?: UserInfo }>("users.info", { user });
       return json.user ?? {};
     },
   };

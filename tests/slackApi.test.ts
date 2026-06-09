@@ -60,4 +60,19 @@ describe("createSlackApi", () => {
     expect(String(init.body)).toContain("user=U9");
     expect(u.profile?.display_name).toBe("Alice");
   });
+
+  it("retries a read after a 429 then succeeds", async () => {
+    let calls = 0;
+    const fetchMock = vi.fn(async () => {
+      calls++;
+      return calls === 1
+        ? new Response("", { status: 429, headers: { "Retry-After": "0" } })
+        : jsonResponse({ ok: true, messages: [{ ts: "1.0", user: "U1" }] });
+    });
+    const noSleep = async () => {};
+    const api = createSlackApi(ctx, fetchMock as unknown as typeof fetch, noSleep);
+    const page = await api.conversationsHistory("C1");
+    expect(calls).toBe(2);
+    expect(page.messages).toHaveLength(1);
+  });
 });

@@ -32,9 +32,7 @@ Note: it deletes only your own messages, and deletion is permanent.
 ## Permission justifications (for the dashboard)
 - Host access `https://*.slack.com/*`: the extension operates only on Slack, to read and
   delete the user's own messages via Slack's API.
-- `scripting` / content script: to display the in-page control panel on Slack.
 - `activeTab`: to act on the Slack tab when you click the toolbar icon.
-- `storage`: to remember your last-used filter settings locally.
 
 ## Privacy practices
 - Single purpose: bulk-delete the user's own Slack messages.
