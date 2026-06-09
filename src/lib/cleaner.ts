@@ -58,6 +58,59 @@ export async function scan(
   return { channelId: channel, tsList, total: tsList.length };
 }
 
-// CleanerEvent and DeleteProgress are used by runDelete (Task 8, appended to this file).
-// Keeping imports here to satisfy that future dependency.
-export type { CleanerEvent, DeleteProgress };
+export async function runDelete(
+  scanResult: ScanResult,
+  _ctx: SlackContext,
+  deps: CleanerDeps,
+  onEvent: (e: CleanerEvent) => void,
+  signal: AbortSignal,
+): Promise<DeleteProgress> {
+  const start = deps.now();
+  const progress: DeleteProgress = {
+    deleted: 0, skipped: 0, total: scanResult.total, ratePerMin: 0, elapsedMs: 0,
+  };
+
+  const finish = (type: "done" | "stopped"): DeleteProgress => {
+    progress.elapsedMs = deps.now() - start;
+    onEvent({ type, progress: { ...progress } });
+    return { ...progress };
+  };
+
+  for (const ts of scanResult.tsList) {
+    if (signal.aborted) return finish("stopped");
+
+    let attempts = 0;
+    for (;;) {
+      if (signal.aborted) return finish("stopped");
+      await deps.sleep(deps.limiter.reserve());
+      const out = await deps.api.chatDelete(scanResult.channelId, ts);
+
+      if (out.ok) { progress.deleted++; break; }
+
+      if (out.status === 429 && attempts < 5) {
+        deps.limiter.penalize(out.retryAfterMs ?? 1000);
+        attempts++;
+        continue;
+      }
+
+      if (out.error === "invalid_auth" || out.error === "token_revoked") {
+        progress.lastError = out.error;
+        onEvent({ type: "error", message: "Slack session expired — reload Slack and try again." });
+        return finish("stopped");
+      }
+
+      // message_not_found / cant_delete_message / compliance_exports_enabled / attempts exhausted
+      progress.skipped++;
+      progress.lastError = out.error;
+      break;
+    }
+
+    progress.elapsedMs = deps.now() - start;
+    const mins = progress.elapsedMs / 60000;
+    progress.ratePerMin = mins > 0 ? (progress.deleted + progress.skipped) / mins : 0;
+    onEvent({ type: "progress", progress: { ...progress } });
+  }
+
+  return finish("done");
+}
+
