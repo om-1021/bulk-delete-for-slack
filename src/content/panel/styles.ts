@@ -1,4 +1,5 @@
 export const PANEL_CSS = `
+:host { color-scheme: light; }
 :host, * { box-sizing: border-box; }
 .panel {
   position: fixed; top: 0; right: 0; height: 100vh; width: 360px; z-index: 2147483647;
@@ -17,7 +18,7 @@ export const PANEL_CSS = `
 .target b { color: #1d1c1d; }
 .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; font-size: 13px; }
 .field label { font-weight: 600; }
-.field input { padding: 7px 9px; border: 1px solid #cfcfcf; border-radius: 6px; font-size: 13px; }
+.field input { padding: 7px 9px; border: 1px solid #cfcfcf; border-radius: 6px; font-size: 13px; background: #fff; color: #1d1c1d; }
 .btn {
   width: 100%; padding: 10px 12px; border: 0; border-radius: 8px; font-size: 14px;
   font-weight: 700; cursor: pointer; margin-top: 6px;
@@ -42,8 +43,9 @@ export const PANEL_CSS = `
 .scan-line { font-size: 13px; color: #1d1c1d; margin: 0; }
 .hint { font-size: 12px; color: #8d8d8d; margin-top: 8px; line-height: 1.45; }
 .picker { margin-bottom: 14px; }
-.picker-search { width: 100%; padding: 7px 9px; border: 1px solid #cfcfcf; border-radius: 6px; font-size: 13px; margin-bottom: 6px; }
-.picker-select { width: 100%; padding: 7px 9px; border: 1px solid #cfcfcf; border-radius: 6px; font-size: 13px; background: #fff; }
+.picker-search { width: 100%; padding: 7px 9px; border: 1px solid #cfcfcf; border-radius: 6px; font-size: 13px; margin-bottom: 6px; background: #fff; color: #1d1c1d; }
+.picker-select { width: 100%; padding: 7px 9px; border: 1px solid #cfcfcf; border-radius: 6px; font-size: 13px; background: #fff; color: #1d1c1d; }
+.picker-select option { background: #fff; color: #1d1c1d; }
 .picker-error { font-size: 12px; color: #8b0a2c; margin: 0 0 6px; }
 .checkbox-row { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; margin: 4px 0 8px; color: #1d1c1d; }
 `;

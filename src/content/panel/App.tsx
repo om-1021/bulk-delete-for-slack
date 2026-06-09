@@ -22,6 +22,9 @@ export function App({ onClose }: { onClose: () => void }) {
   const ctxRef = useRef<SlackContext | null>(null);
   const scanRef = useRef<ScanResult | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const lastActiveRef = useRef<string | null>(readActiveChannelId(location.pathname));
 
   useEffect(() => {
     try {
@@ -41,6 +44,24 @@ export function App({ onClose }: { onClose: () => void }) {
         message: e instanceof TokenNotFoundError ? e.message : "Could not read your Slack session — reload Slack.",
       });
     }
+  }, []);
+
+  // Follow the conversation the user switches to in Slack (only while idle, so an
+  // in-progress scan/preview isn't yanked out from under them).
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const active = readActiveChannelId(location.pathname);
+      if (active === lastActiveRef.current) return;
+      lastActiveRef.current = active;
+      if (!active || stateRef.current.status !== "idle") return;
+      dispatch({ type: "SELECT_TARGET", channelId: active, conversationName: active });
+      if (ctxRef.current) {
+        resolveConversationName(active, createSlackApi(ctxRef.current)).then((name) =>
+          dispatch({ type: "SET_CONVERSATION_NAME", conversationName: name }),
+        );
+      }
+    }, 1000);
+    return () => clearInterval(interval);
   }, []);
 
   function buildDeps(): CleanerDeps {
