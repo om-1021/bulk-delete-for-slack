@@ -17,6 +17,7 @@ export interface ScanFilters {
   onlyMine: boolean;   // v1: always true
   afterSec?: number;   // inclusive lower bound (epoch seconds)
   beforeSec?: number;  // inclusive upper bound (epoch seconds)
+  keepPinned?: boolean; // when true, pinned messages are excluded from deletion
 }
 
 export interface ScanResult {

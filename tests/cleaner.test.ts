@@ -93,6 +93,26 @@ describe("scan", () => {
       { scanned: 3, found: 2 },
     ]);
   });
+
+  it("excludes pinned messages when keepPinned is on", async () => {
+    const api = fakeApi({
+      conversationsHistory: async () => ({ messages: [{ ts: "100.0", user: "U1" }, { ts: "200.0", user: "U1" }] }),
+      pinsList: async () => ["100.0"],
+    });
+    const res = await scan("C1", ctx, { onlyMine: true, keepPinned: true }, deps(api));
+    expect(res.tsList).toEqual(["200.0"]);
+  });
+
+  it("does not call pins.list when keepPinned is off", async () => {
+    const pins = vi.fn(async () => ["100.0"]);
+    const api = fakeApi({
+      conversationsHistory: async () => ({ messages: [{ ts: "100.0", user: "U1" }] }),
+      pinsList: pins,
+    });
+    const res = await scan("C1", ctx, { onlyMine: true, keepPinned: false }, deps(api));
+    expect(pins).not.toHaveBeenCalled();
+    expect(res.tsList).toEqual(["100.0"]);
+  });
 });
 
 import { runDelete } from "../src/lib/cleaner";

@@ -37,12 +37,22 @@ export async function scan(
   const latest = filters.beforeSec !== undefined ? String(filters.beforeSec) : undefined;
   let scanned = 0;
 
+  let pinned = new Set<string>();
+  if (filters.keepPinned) {
+    try {
+      await deps.sleep(deps.limiter.reserve());
+      pinned = new Set(await deps.api.pinsList(channel));
+    } catch {
+      pinned = new Set();
+    }
+  }
+
   let cursor: string | undefined;
   do {
     await deps.sleep(deps.limiter.reserve());
     const page = await deps.api.conversationsHistory(channel, { cursor, oldest, latest, limit: 200 });
     for (const m of page.messages) {
-      if (matches(m, ctx.userId, filters)) found.add(m.ts);
+      if (matches(m, ctx.userId, filters) && !pinned.has(m.ts)) found.add(m.ts);
       if ((m.reply_count ?? 0) > 0) threadRoots.push(m.ts);
     }
     scanned += page.messages.length;
@@ -57,7 +67,7 @@ export async function scan(
       const page = await deps.api.conversationsReplies(channel, root, { cursor: rc, limit: 200 });
       for (const m of page.messages) {
         if (m.ts === root) continue; // root already handled by history pass
-        if (matches(m, ctx.userId, filters)) found.add(m.ts);
+        if (matches(m, ctx.userId, filters) && !pinned.has(m.ts)) found.add(m.ts);
       }
       scanned += page.messages.length;
       onProgress?.({ scanned, found: found.size });
