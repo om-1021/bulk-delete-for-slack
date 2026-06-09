@@ -19,25 +19,34 @@ function matches(msg: SlackMessage, userId: string, filters: ScanFilters): boole
   return true;
 }
 
+export interface ScanProgress {
+  scanned: number; // messages checked so far
+  found: number; // of those, how many are the user's (will be deleted)
+}
+
 export async function scan(
   channel: string,
   ctx: SlackContext,
   filters: ScanFilters,
   deps: CleanerDeps,
+  onProgress?: (p: ScanProgress) => void,
 ): Promise<ScanResult> {
-  const found: string[] = [];
+  const found = new Set<string>();
   const threadRoots: string[] = [];
   const oldest = filters.afterSec !== undefined ? String(filters.afterSec) : undefined;
   const latest = filters.beforeSec !== undefined ? String(filters.beforeSec) : undefined;
+  let scanned = 0;
 
   let cursor: string | undefined;
   do {
     await deps.sleep(deps.limiter.reserve());
     const page = await deps.api.conversationsHistory(channel, { cursor, oldest, latest, limit: 200 });
     for (const m of page.messages) {
-      if (matches(m, ctx.userId, filters)) found.push(m.ts);
+      if (matches(m, ctx.userId, filters)) found.add(m.ts);
       if ((m.reply_count ?? 0) > 0) threadRoots.push(m.ts);
     }
+    scanned += page.messages.length;
+    onProgress?.({ scanned, found: found.size });
     cursor = page.nextCursor;
   } while (cursor);
 
@@ -48,13 +57,15 @@ export async function scan(
       const page = await deps.api.conversationsReplies(channel, root, { cursor: rc, limit: 200 });
       for (const m of page.messages) {
         if (m.ts === root) continue; // root already handled by history pass
-        if (matches(m, ctx.userId, filters)) found.push(m.ts);
+        if (matches(m, ctx.userId, filters)) found.add(m.ts);
       }
+      scanned += page.messages.length;
+      onProgress?.({ scanned, found: found.size });
       rc = page.nextCursor;
     } while (rc);
   }
 
-  const tsList = Array.from(new Set(found));
+  const tsList = Array.from(found);
   return { channelId: channel, tsList, total: tsList.length };
 }
 

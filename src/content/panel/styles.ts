@@ -33,4 +33,12 @@ export const PANEL_CSS = `
 .stats { font-size: 12px; color: #616061; display: flex; justify-content: space-between; }
 .error { background: #fdeef0; color: #8b0a2c; padding: 10px 12px; border-radius: 8px; font-size: 13px; }
 .note { font-size: 11px; color: #8d8d8d; margin-top: 12px; line-height: 1.4; }
+.scanning { text-align: center; padding: 14px 0 6px; }
+.spinner {
+  width: 30px; height: 30px; margin: 4px auto 12px; border: 3px solid #ececec;
+  border-top-color: #611f69; border-radius: 50%; animation: bdfs-spin 0.8s linear infinite;
+}
+@keyframes bdfs-spin { to { transform: rotate(360deg); } }
+.scan-line { font-size: 13px; color: #1d1c1d; margin: 0; }
+.hint { font-size: 12px; color: #8d8d8d; margin-top: 8px; line-height: 1.45; }
 `;

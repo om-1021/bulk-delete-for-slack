@@ -76,6 +76,21 @@ describe("scan", () => {
     const res = await scan("C1", ctx, { onlyMine: true }, deps(api));
     expect(res.tsList).toEqual(["10.1"]);
   });
+
+  it("reports scan progress as it pages through history", async () => {
+    const pages: HistoryPage[] = [
+      { messages: [{ ts: "1.0", user: "U1" }, { ts: "2.0", user: "U2" }], nextCursor: "c2" },
+      { messages: [{ ts: "3.0", user: "U1" }] },
+    ];
+    let i = 0;
+    const api = fakeApi({ conversationsHistory: async () => pages[i++] });
+    const updates: { scanned: number; found: number }[] = [];
+    await scan("C1", ctx, { onlyMine: true }, deps(api), (p) => updates.push(p));
+    expect(updates).toEqual([
+      { scanned: 2, found: 1 },
+      { scanned: 3, found: 2 },
+    ]);
+  });
 });
 
 import { runDelete } from "../src/lib/cleaner";

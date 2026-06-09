@@ -40,4 +40,14 @@ describe("panel reducer", () => {
     expect(named.conversationName).toBe("DM with Alice");
     expect(named.status).toBe("idle");
   });
+
+  it("tracks scan progress and resets it on a new scan", () => {
+    const scanning = reduce(initialState, { type: "SCAN_START" });
+    expect(scanning.scanProgress).toEqual({ scanned: 0, found: 0 });
+    const progressed = reduce(scanning, { type: "SCAN_PROGRESS", scanned: 200, found: 12 });
+    expect(progressed.scanProgress).toEqual({ scanned: 200, found: 12 });
+    expect(progressed.status).toBe("scanning");
+    const rescan = reduce(progressed, { type: "SCAN_START" });
+    expect(rescan.scanProgress).toEqual({ scanned: 0, found: 0 });
+  });
 });

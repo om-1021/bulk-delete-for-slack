@@ -53,7 +53,9 @@ export function App({ onClose }: { onClose: () => void }) {
     if (!ctxRef.current || !state.channelId) return;
     dispatch({ type: "SCAN_START" });
     try {
-      const result = await scan(state.channelId, ctxRef.current, filters(), buildDeps());
+      const result = await scan(state.channelId, ctxRef.current, filters(), buildDeps(), (p) =>
+        dispatch({ type: "SCAN_PROGRESS", scanned: p.scanned, found: p.found }),
+      );
       scanRef.current = result;
       dispatch({ type: "SCAN_DONE", total: result.total });
     } catch {
@@ -92,7 +94,7 @@ export function App({ onClose }: { onClose: () => void }) {
           {state.status === "error" && <div class="error">{state.error}</div>}
 
           {state.channelId && (
-            <p class="target">Cleaning: <b>{state.conversationName}</b><br />Only your own messages.</p>
+            <p class="target">Cleaning: <b>{state.conversationName}</b><br />Only messages sent by you.</p>
           )}
 
           {(state.status === "idle" || state.status === "preview") && state.channelId && (
@@ -109,7 +111,19 @@ export function App({ onClose }: { onClose: () => void }) {
             </>
           )}
 
-          {state.status === "scanning" && <p>Scanning…</p>}
+          {state.status === "scanning" && (
+            <div class="scanning">
+              <div class="spinner" />
+              <p class="scan-line">
+                <b>Scanning…</b> checked {state.scanProgress.scanned} message{state.scanProgress.scanned === 1 ? "" : "s"} so far
+                {state.scanProgress.found > 0 ? `, found ${state.scanProgress.found} of yours` : ""}.
+              </p>
+              <p class="hint">
+                This can take a few minutes for long conversations — it's working through them in
+                the background. Please keep this tab open.
+              </p>
+            </div>
+          )}
 
           {state.status === "preview" && (
             <>
@@ -153,7 +167,7 @@ export function App({ onClose }: { onClose: () => void }) {
 
           <p class="note">
             Free · runs entirely in your browser · nothing is sent to any server.
-            Deletes only your own messages. Deletion is permanent.
+            Deletes only messages sent by you. Deletion is permanent.
           </p>
         </div>
       </div>

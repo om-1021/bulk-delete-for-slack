@@ -11,6 +11,7 @@ export interface PanelState {
   beforeSec?: number;
   confirmed: boolean;
   scanTotal: number;
+  scanProgress: { scanned: number; found: number };
   progress: DeleteProgress;
   error?: string;
 }
@@ -21,6 +22,7 @@ export type PanelAction =
   | { type: "SET_BEFORE"; beforeSec?: number }
   | { type: "SET_CONFIRMED"; confirmed: boolean }
   | { type: "SCAN_START" }
+  | { type: "SCAN_PROGRESS"; scanned: number; found: number }
   | { type: "SCAN_DONE"; total: number }
   | { type: "RUN_START" }
   | { type: "PROGRESS"; progress: DeleteProgress }
@@ -36,6 +38,7 @@ export const initialState: PanelState = {
   channelId: null,
   confirmed: false,
   scanTotal: 0,
+  scanProgress: { scanned: 0, found: 0 },
   progress: { deleted: 0, skipped: 0, total: 0, ratePerMin: 0, elapsedMs: 0 },
 };
 
@@ -50,7 +53,9 @@ export function reduce(state: PanelState, action: PanelAction): PanelState {
     case "SET_CONFIRMED":
       return { ...state, confirmed: action.confirmed };
     case "SCAN_START":
-      return { ...state, status: "scanning", error: undefined };
+      return { ...state, status: "scanning", error: undefined, scanProgress: { scanned: 0, found: 0 } };
+    case "SCAN_PROGRESS":
+      return { ...state, scanProgress: { scanned: action.scanned, found: action.found } };
     case "SCAN_DONE":
       return { ...state, status: "preview", scanTotal: action.total, progress: { ...state.progress, total: action.total } };
     case "RUN_START":
