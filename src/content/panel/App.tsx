@@ -98,15 +98,18 @@ export function App({ onClose }: { onClose: () => void }) {
             <p class="target">Cleaning: <b>{state.conversationName}</b><br />Only messages sent by you.</p>
           )}
 
+          {ctxRef.current && (
+            <div hidden={!(state.status === "idle" || state.status === "preview")}>
+              <ConversationPicker
+                api={createSlackApi(ctxRef.current)}
+                selectedId={state.channelId}
+                onSelect={(id, label) => dispatch({ type: "SELECT_TARGET", channelId: id, conversationName: label })}
+              />
+            </div>
+          )}
+
           {(state.status === "idle" || state.status === "preview") && (
             <>
-              {ctxRef.current && (
-                <ConversationPicker
-                  api={createSlackApi(ctxRef.current)}
-                  selectedId={state.channelId}
-                  onSelect={(id, label) => dispatch({ type: "SELECT_TARGET", channelId: id, conversationName: label })}
-                />
-              )}
               <div class="field">
                 <label>After (optional)</label>
                 <input type="date" onInput={(e) => dispatch({ type: "SET_AFTER", afterSec: dateToSec((e.target as HTMLInputElement).value) })} />
